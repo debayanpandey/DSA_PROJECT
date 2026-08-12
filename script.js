@@ -74,9 +74,168 @@ let dropdownMenu = null;
 let isDropdownOpen = false;
 
 // ==========================================
+// SOUND SYSTEM
+// ==========================================
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let soundEnabled = true;
+let volume = 0.4;
+
+const soundToggleBtn = document.getElementById('sound-toggle-btn');
+const soundIcon = document.getElementById('sound-icon');
+const soundText = document.getElementById('sound-text');
+
+const savedSound = sessionStorage.getItem('neosort-sound');
+if (savedSound === 'off') {
+    soundEnabled = false;
+}
+
+function updateSoundUI() {
+    if (!soundToggleBtn) return;
+    if (soundEnabled) {
+        soundIcon.textContent = '🔊';
+        soundText.textContent = 'ON';
+        soundToggleBtn.style.color = 'var(--cyan)';
+        soundToggleBtn.style.borderColor = 'var(--cyan)';
+    } else {
+        soundIcon.textContent = '🔇';
+        soundText.textContent = 'OFF';
+        soundToggleBtn.style.color = 'var(--text-muted)';
+        soundToggleBtn.style.borderColor = 'var(--panel-border)';
+    }
+}
+
+function initAudio() {
+    if (!soundEnabled) return;
+    if (!audioCtx) {
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+// Sound Generators
+function playTone(freq, type, duration, volMultiplier = 1) {
+    if (!soundEnabled || !audioCtx) return;
+    
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(volume * volMultiplier, audioCtx.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+function playStartSound() {
+    initAudio();
+    playTone(440, 'sine', 0.1, 0.4);
+    setTimeout(() => playTone(880, 'sine', 0.2, 0.4), 100);
+}
+
+function playStopSound() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(350, now);
+    osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+    
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(volume * 0.35, now + 0.03); // smooth attack
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2); // smooth release
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.2);
+}
+
+function playRestartSound() {
+    initAudio();
+    playTone(600, 'triangle', 0.1, 0.3);
+    setTimeout(() => playTone(400, 'triangle', 0.15, 0.3), 80);
+}
+
+function playSelectSound() {
+    initAudio();
+    playTone(1200, 'sine', 0.1, 0.2);
+}
+
+function playLoadSound() {
+    initAudio();
+    playTone(800, 'sine', 0.1, 0.3);
+    setTimeout(() => playTone(1200, 'sine', 0.15, 0.3), 100);
+}
+
+function playRandomizeSound() {
+    initAudio();
+    if (!soundEnabled || !audioCtx) return;
+    for (let i = 0; i < 4; i++) {
+        setTimeout(() => playTone(400 + Math.random() * 400, 'sine', 0.05, 0.15), i * 40);
+    }
+}
+
+let lastCompareTime = 0;
+function playCompareSound() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const throttleTime = delay < 20 ? 0.04 : 0.015;
+    if (now - lastCompareTime < throttleTime) return;
+    lastCompareTime = now;
+    
+    playTone(800, 'sine', 0.03, 0.1);
+}
+
+let lastSwapTime = 0;
+function playSwapSound() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const throttleTime = delay < 20 ? 0.05 : 0.02;
+    if (now - lastSwapTime < throttleTime) return;
+    lastSwapTime = now;
+    
+    playTone(500, 'triangle', 0.05, 0.15);
+}
+
+let lastSortedTime = 0;
+function playSortedSound(index, total) {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const throttleTime = delay < 10 ? 0.02 : 0.005;
+    if (now - lastSortedTime < throttleTime) return;
+    lastSortedTime = now;
+    
+    const minFreq = 400;
+    const maxFreq = 1200;
+    const freq = minFreq + (index / total) * (maxFreq - minFreq);
+    playTone(freq, 'sine', 0.05, 0.15);
+}
+
+function playCompleteSound() {
+    if (!soundEnabled || !audioCtx) return;
+    setTimeout(() => playTone(440, 'sine', 0.2, 0.3), 0);
+    setTimeout(() => playTone(554, 'sine', 0.2, 0.3), 150);
+    setTimeout(() => playTone(659, 'sine', 0.4, 0.3), 300);
+}
+
+// ==========================================
 // INITIALIZATION
 // ==========================================
 function init() {
+    updateSoundUI();
     setupDropdown();
     setupEventListeners();
     updateSpeedText(speedSlider.value);
@@ -110,6 +269,7 @@ function setupDropdown() {
         if (item) {
             if (isSorting && !isPaused) return; // Prevent changing while running
             
+            playSelectSound();
             // Update active state
             document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
             item.classList.add('active');
@@ -212,7 +372,15 @@ function updateDropdownPosition() {
     if (!dropdownMenu || !isDropdownOpen) return;
     const rect = trigger.getBoundingClientRect();
     dropdownMenu.style.top = `${rect.bottom + 5}px`;
-    dropdownMenu.style.left = `${rect.left}px`;
+    
+    // Ensure dropdown stays in viewport
+    let leftPos = rect.left;
+    if (leftPos + rect.width > window.innerWidth) {
+        leftPos = window.innerWidth - rect.width - 10;
+    }
+    if (leftPos < 10) leftPos = 10;
+    
+    dropdownMenu.style.left = `${leftPos}px`;
     dropdownMenu.style.width = `${rect.width}px`;
 }
 
@@ -220,6 +388,18 @@ function updateDropdownPosition() {
 // EVENT LISTENERS
 // ==========================================
 function setupEventListeners() {
+    if (soundToggleBtn) {
+        soundToggleBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            sessionStorage.setItem('neosort-sound', soundEnabled ? 'on' : 'off');
+            updateSoundUI();
+            if (soundEnabled) {
+                initAudio();
+                playTone(800, 'sine', 0.1, 0.3); // feedback
+            }
+        });
+    }
+
     sizeSlider.addEventListener('input', (e) => {
         if (isSorting) return;
         arraySize = parseInt(e.target.value);
@@ -236,6 +416,7 @@ function setupEventListeners() {
 
     randomizeBtn.addEventListener('click', () => {
         if (isSorting && !isPaused) return;
+        playRandomizeSound();
         if (isSorting && isPaused) {
             cancelCurrentRun();
         }
@@ -258,6 +439,7 @@ function setupEventListeners() {
     startBtn.addEventListener('click', () => {
         if (isSorting && !isPaused) return;
         
+        playStartSound();
         if (isPaused) {
             // Resume
             isPaused = false;
@@ -281,6 +463,7 @@ function setupEventListeners() {
     });
 
     pauseBtn.addEventListener('click', () => {
+        playRestartSound();
         cancelCurrentRun();
         
         // RESET BEHAVIOR
@@ -292,6 +475,7 @@ function setupEventListeners() {
 
     stopBtn.addEventListener('click', () => {
         if (isSorting && !isPaused) {
+            playStopSound();
             isPaused = true;
             statusState.textContent = 'Paused';
             updateButtonsState();
@@ -351,6 +535,7 @@ function handleArrayAction() {
         array = [...originalArray];
     }
     
+    playLoadSound();
     resetStats();
     renderArray();
 }
@@ -513,10 +698,12 @@ async function startAlgorithm(runId) {
         if (!shouldStop && currentRunId === runId) {
             statusState.textContent = 'Sorted';
             stopTimer();
+            playCompleteSound();
             // Green glow effect
             for(let i=0; i<array.length; i++) {
                 if (currentRunId !== runId) break;
                 setBarClass(i, 'sorted');
+                playSortedSound(i, array.length);
                 await sleep(10); // small delay for visual wave
             }
         }
@@ -556,10 +743,12 @@ async function bubbleSort(runId) {
             comps++;
             updateStats();
 
+            playCompareSound();
             if (array[j] > array[j + 1]) {
                 await checkState(runId);
                 setBarClass(j, 'swapping');
                 setBarClass(j + 1, 'swapping');
+                playSwapSound();
                 
                 // Swap
                 let temp = array[j];
@@ -593,6 +782,7 @@ async function selectionSort(runId) {
             comps++;
             updateStats();
             
+            playCompareSound();
             if (array[j] < array[minIdx]) {
                 if (minIdx !== i) setBarClass(minIdx, '');
                 minIdx = j;
@@ -604,6 +794,7 @@ async function selectionSort(runId) {
         
         if (minIdx !== i) {
             await checkState(runId);
+            playSwapSound();
             let temp = array[i];
             array[i] = array[minIdx];
             array[minIdx] = temp;
@@ -634,7 +825,9 @@ async function insertionSort(runId) {
             setBarClass(j, 'comparing');
             await checkState(runId);
             
+            playCompareSound();
             if (array[j] > key) {
+                playSwapSound();
                 array[j + 1] = array[j];
                 swaps++;
                 updateStats();
@@ -680,6 +873,7 @@ async function merge(left, mid, right, runId) {
         setBarClass(k, 'comparing');
         comps++;
         updateStats();
+        playCompareSound();
         
         if (L[i] <= R[j]) {
             array[k] = L[i];
@@ -688,6 +882,7 @@ async function merge(left, mid, right, runId) {
             array[k] = R[j];
             j++;
         }
+        playSwapSound();
         updateBarHeight(k, array[k]);
         swaps++;
         updateStats();
@@ -700,6 +895,7 @@ async function merge(left, mid, right, runId) {
     while (i < n1) {
         await checkState(runId);
         setBarClass(k, 'swapping');
+        playSwapSound();
         array[k] = L[i];
         updateBarHeight(k, array[k]);
         swaps++;
@@ -713,6 +909,7 @@ async function merge(left, mid, right, runId) {
     while (j < n2) {
         await checkState(runId);
         setBarClass(k, 'swapping');
+        playSwapSound();
         array[k] = R[j];
         updateBarHeight(k, array[k]);
         swaps++;
@@ -743,9 +940,11 @@ async function partition(low, high, runId) {
         setBarClass(j, 'comparing');
         comps++;
         updateStats();
+        playCompareSound();
         
         if (array[j] < pivot) {
             i++;
+            playSwapSound();
             // Swap
             let temp = array[i];
             array[i] = array[j];
@@ -760,6 +959,7 @@ async function partition(low, high, runId) {
     }
     
     await checkState(runId);
+    playSwapSound();
     let temp = array[i + 1];
     array[i + 1] = array[high];
     array[high] = temp;
@@ -792,6 +992,7 @@ async function countSort(exp, runId) {
         let index = Math.floor(array[i] / exp) % 10;
         count[index]++;
         setBarClass(i, 'comparing');
+        playCompareSound();
         await checkState(runId);
         setBarClass(i, '');
     }
@@ -809,9 +1010,10 @@ async function countSort(exp, runId) {
     
     for (let i = 0; i < n; i++) {
         await checkState(runId);
+        setBarClass(i, 'swapping');
+        playSwapSound();
         array[i] = output[i];
         updateBarHeight(i, array[i]);
-        setBarClass(i, 'swapping');
         swaps++;
         updateStats();
         await checkState(runId);
