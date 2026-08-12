@@ -633,33 +633,129 @@ input[type=range]::-webkit-slider-runnable-track {
 /* =========================================
    RESPONSIVE DESIGN
    ========================================= */
-@media (max-width: 1200px) {
+
+/* LAPTOP */
+@media (max-width: 1199px) {
     .control-panel {
-        flex-wrap: wrap;
+        padding: 1rem;
+        gap: 1rem;
     }
-    #area-4 {
-        margin-left: 0;
+    .app-container {
+        padding: 1rem;
+        gap: 1rem;
     }
 }
 
-@media (max-width: 900px) {
+/* TABLET */
+@media (max-width: 991px) {
+    .control-panel {
+        flex-wrap: wrap;
+    }
+    
+    #area-1, #area-2 {
+        flex: 1 1 45%;
+    }
+    
+    #area-3 {
+        flex: 1 1 100%;
+        flex-direction: row;
+        gap: 1.5rem;
+    }
+    .slider-group {
+        flex: 1;
+    }
+
+    #area-4 {
+        flex: 1 1 100%;
+        margin-left: 0;
+        justify-content: center;
+        align-items: center;
+    }
+    .action-grid {
+        width: auto;
+    }
+
     .main-content {
         flex-direction: column;
     }
+    
     .visualization-panel {
         min-height: 400px;
     }
 }
 
-@media (max-width: 600px) {
+/* MOBILE */
+@media (max-width: 767px) {
+    .app-container {
+        padding: 0.8rem;
+    }
+    
+    .title {
+        font-size: 2rem;
+    }
+    
     .control-panel {
         flex-direction: column;
         align-items: stretch;
+        gap: 1.2rem;
+        padding: 1rem;
     }
-    #area-4 {
-        margin-left: 0;
+    
+    #area-1, #area-2, #area-3, #area-4 {
+        flex: 1 1 100%;
+        min-width: 0;
     }
+    
+    #area-3 {
+        flex-direction: column;
+        gap: 1.2rem;
+    }
+    
     .action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         width: 100%;
+        gap: 10px;
+    }
+
+    .cyber-btn {
+        min-height: 44px;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+        height: 20px;
+        width: 20px;
+        margin-top: -8px;
+    }
+
+    .input-group input {
+        min-height: 44px;
+        width: 100%;
+    }
+    
+    .input-group {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .input-group .cyber-btn {
+        width: 100%;
+    }
+
+    .dropdown-trigger {
+        min-height: 44px;
+    }
+
+    .visualization-panel {
+        min-height: 300px;
+        padding: 1rem;
+    }
+    
+    .bar {
+        min-width: 1px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }
