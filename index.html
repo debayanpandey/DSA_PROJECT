@@ -81,7 +81,14 @@
             <!-- Right: System Status Panel -->
             <aside class="system-status-panel">
                 <div class="panel-header">
-                    <h2 class="panel-title">SYSTEM STATUS</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h2 class="panel-title" style="margin-bottom: 0;">SYSTEM STATUS</h2>
+                        <div class="sound-control-container" style="display: flex; align-items: center; gap: 10px;">
+                            <button id="sound-toggle-btn" style="background: transparent; border: 1px solid var(--cyan); color: var(--cyan); border-radius: 4px; padding: 2px 6px; font-family: var(--font-heading); font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                                <span id="sound-icon">🔊</span> <span id="sound-text">ON</span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="decorative-line"></div>
                 </div>
                 
