@@ -238,7 +238,7 @@ header {
     font-size: 0.85rem;
     color: var(--cyan);
     font-weight: 600;
-    text-shadow: 0 0 5px rgba(0, 255, 255, 0.4);
+    text-shadow: var(--text-glow, 0 0 5px rgba(0, 255, 255, 0.4));
 }
 
 input[type=range] {
@@ -255,7 +255,7 @@ input[type=range]::-webkit-slider-thumb {
     background: var(--cyan);
     cursor: pointer;
     margin-top: -5px;
-    box-shadow: var(--cyan-glow);
+    box-shadow: var(--slider-glow, var(--cyan-glow));
     transition: transform 0.1s;
 }
 
