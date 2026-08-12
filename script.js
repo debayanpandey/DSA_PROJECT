@@ -392,10 +392,13 @@ function resetBarClasses() {
 // UTILITIES
 // ==========================================
 function updateSpeedText(val) {
-    let speedText = 'MEDIUM';
-    if (val < 33) speedText = 'SLOW';
-    else if (val > 66) speedText = 'FAST';
-    speedValue.textContent = speedText;
+    speedValue.textContent = val + '%';
+    
+    const glowSpread = 5 + (val / 100) * 15;
+    const glowOpacity = 0.2 + (val / 100) * 0.6;
+    
+    speedSlider.style.setProperty('--slider-glow', `0 0 ${glowSpread}px rgba(0, 255, 255, ${glowOpacity.toFixed(2)})`);
+    speedValue.style.setProperty('--text-glow', `0 0 ${glowSpread / 2}px rgba(0, 255, 255, ${(glowOpacity * 0.8).toFixed(2)})`);
     
     // Map 1-100 to actual delay in ms (inverted: higher value = lower delay)
     // 1 -> 500ms, 100 -> 2ms
